@@ -158,31 +158,41 @@ function removeVehicle(vehicle) {
  *   It will send this event to our FastAPI backend, which will
  *   publish the event into Kafka.
  */
-function handleTollCrossing(vehicle) {
+async function handleTollCrossing(vehicle) {
   const passageEvent = {
     eventId: vehicle.eventId,
     licensePlateId: vehicle.licensePlateId,
     timestamp: new Date().toISOString()
   };
 
+  // This is a frontend simulation metric.
   crossingCount += 1;
   crossingCountElement.textContent = crossingCount;
 
-  addEventToLog(passageEvent);
-
   console.log("Toll passage detected:", passageEvent);
 
-  /*
-   * This will be added in the next backend stage:
-   *
-   * fetch("/api/toll-passages", {
-   *   method: "POST",
-   *   headers: {
-   *     "Content-Type": "application/json"
-   *   },
-   *   body: JSON.stringify(passageEvent)
-   * });
-   */
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8001/toll-passages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(passageEvent)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `API returned status ${response.status}`
+      );
+    }
+
+    console.log("Toll passage accepted by API");
+  } catch (error) {
+    console.error("Failed to send toll passage:", error);
+  }
 }
 
 function addEventToLog(passageEvent) {
