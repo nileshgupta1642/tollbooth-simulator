@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Toll Booth Simulator</title>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main class="page">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Event-driven systems project</p>
+        <h1>Toll Booth Simulator</h1>
+        <p class="subtitle">
+          Vehicles are detected when they cross the toll sensor.
+        </p>
+      </div>
+
+      <div class="simulation-status">
+        <span
+          id="statusIndicator"
+          class="status-indicator status-indicator--stopped"
+        ></span>
+
+        <span id="statusText">Stopped</span>
+      </div>
+    </header>
+
+    <section class="dashboard">
+      <section class="simulation-card">
+        <div class="card-header">
+          <div>
+            <h2>Live Toll Booth</h2>
+            <p>Vehicles travel north through one toll booth.</p>
+          </div>
+        </div>
+
+        <div class="road-container">
+          <div id="road" class="road">
+            <div class="road-center-line"></div>
+
+            <div class="toll-booth">
+              <div class="toll-booth__roof">TOLL</div>
+
+              <div class="toll-booth__building">
+                <div class="toll-booth__window"></div>
+              </div>
+
+              <div class="toll-booth__barrier"></div>
+            </div>
+
+            <div id="sensorLine" class="sensor-line">
+              <span>TOLL SENSOR</span>
+            </div>
+
+            <div
+              id="vehicleLayer"
+              class="vehicle-layer"
+              aria-label="Vehicle simulation"
+            ></div>
+
+            <div class="direction-label">
+              <span>North</span>
+              <span class="direction-arrow">↑</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="button-group">
+            <button id="startButton" class="button button--primary">
+              Start
+            </button>
+
+            <button id="pauseButton" class="button" disabled>
+              Pause
+            </button>
+
+            <button id="resetButton" class="button">
+              Reset
+            </button>
+          </div>
+
+          <div class="speed-control">
+            <div class="speed-control__header">
+              <label for="speedSlider">Simulation speed</label>
+              <strong id="speedValue">1×</strong>
+            </div>
+
+            <input
+              id="speedSlider"
+              type="range"
+              min="0.25"
+              max="4"
+              step="0.25"
+              value="1"
+            />
+
+            <div class="speed-labels">
+              <span>Testing</span>
+              <span>Fast</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="events-card">
+        <div class="card-header">
+          <div>
+            <h2>Passage Events</h2>
+            <p>This will eventually display processed debts.</p>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <span>Vehicles created</span>
+            <strong id="createdCount">0</strong>
+          </div>
+
+          <div class="metric">
+            <span>Sensor crossings</span>
+            <strong id="crossingCount">0</strong>
+          </div>
+
+          <div class="metric">
+            <span>Backend</span>
+            <strong class="not-connected">Not connected</strong>
+          </div>
+        </div>
+
+        <div class="event-log-header">
+          <h3>Recent crossings</h3>
+          <span>Local simulation</span>
+        </div>
+
+        <ol id="eventList" class="event-list">
+          <li id="emptyEventState" class="empty-event-state">
+            Start the simulation to generate toll passage events.
+          </li>
+        </ol>
+      </aside>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
