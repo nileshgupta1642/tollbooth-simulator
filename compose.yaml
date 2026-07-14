@@ -1,0 +1,7 @@
+services:
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: tollbooth-kafka
+    ports:
+      - "9092:9092"
+      
