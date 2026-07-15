@@ -8,11 +8,8 @@ services:
   mysql:
     image: mysql:8.4
     container_name: tollbooth-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: tollbooth
-      MYSQL_USER: tollbooth
-      MYSQL_PASSWORD: tollbooth
+    env_file:
+      - .env
     ports:
       - "3306:3306"
     volumes:
