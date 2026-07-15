@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -16,8 +17,12 @@
   <main class="page">
     <header class="page-header">
       <div>
-        <p class="eyebrow">Event-driven systems project</p>
+        <p class="eyebrow">
+          Event-driven systems project
+        </p>
+
         <h1>Toll Booth Simulator</h1>
+
         <p class="subtitle">
           Vehicles are detected when they cross the toll sensor.
         </p>
@@ -38,7 +43,10 @@
         <div class="card-header">
           <div>
             <h2>Live Toll Booth</h2>
-            <p>Vehicles travel north through one toll booth.</p>
+
+            <p>
+              Vehicles travel north through one toll booth.
+            </p>
           </div>
         </div>
 
@@ -47,7 +55,9 @@
             <div class="road-center-line"></div>
 
             <div class="toll-booth">
-              <div class="toll-booth__roof">TOLL</div>
+              <div class="toll-booth__roof">
+                TOLL
+              </div>
 
               <div class="toll-booth__building">
                 <div class="toll-booth__window"></div>
@@ -56,7 +66,10 @@
               <div class="toll-booth__barrier"></div>
             </div>
 
-            <div id="sensorLine" class="sensor-line">
+            <div
+              id="sensorLine"
+              class="sensor-line"
+            >
               <span>TOLL SENSOR</span>
             </div>
 
@@ -75,23 +88,38 @@
 
         <div class="controls">
           <div class="button-group">
-            <button id="startButton" class="button button--primary">
+            <button
+              id="startButton"
+              class="button button--primary"
+            >
               Start
             </button>
 
-            <button id="pauseButton" class="button" disabled>
+            <button
+              id="pauseButton"
+              class="button"
+              disabled
+            >
               Pause
             </button>
 
-            <button id="resetButton" class="button">
+            <button
+              id="resetButton"
+              class="button"
+            >
               Reset
             </button>
           </div>
 
           <div class="speed-control">
             <div class="speed-control__header">
-              <label for="speedSlider">Simulation speed</label>
-              <strong id="speedValue">1×</strong>
+              <label for="speedSlider">
+                Simulation speed
+              </label>
+
+              <strong id="speedValue">
+                1×
+              </strong>
             </div>
 
             <input
@@ -114,8 +142,12 @@
       <aside class="events-card">
         <div class="card-header">
           <div>
-            <h2>Passage Events</h2>
-            <p>This will eventually display processed debts.</p>
+            <h2>Live Toll Debts</h2>
+
+            <p>
+              Current balances calculated from processed toll
+              passages.
+            </p>
           </div>
         </div>
 
@@ -131,19 +163,23 @@
           </div>
 
           <div class="metric">
-            <span>Backend</span>
-            <strong class="not-connected">Not connected</strong>
+            <span>Debt refresh</span>
+            <strong>Every 1 second</strong>
           </div>
         </div>
 
         <div class="event-log-header">
-          <h3>Recent crossings</h3>
-          <span>Local simulation</span>
+          <h3>Outstanding balances</h3>
+
+          <span>MySQL source of truth</span>
         </div>
 
-        <ol id="eventList" class="event-list">
-          <li id="emptyEventState" class="empty-event-state">
-            Start the simulation to generate toll passage events.
+        <ol
+          id="eventList"
+          class="event-list"
+        >
+          <li class="empty-event-state">
+            Loading toll debt data...
           </li>
         </ol>
       </aside>

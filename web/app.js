@@ -11,11 +11,16 @@ const speedValue = document.querySelector("#speedValue");
 const statusIndicator = document.querySelector("#statusIndicator");
 const statusText = document.querySelector("#statusText");
 
-const createdCountElement = document.querySelector("#createdCount");
-const crossingCountElement = document.querySelector("#crossingCount");
+const createdCountElement =
+  document.querySelector("#createdCount");
+
+const crossingCountElement =
+  document.querySelector("#crossingCount");
 
 const eventList = document.querySelector("#eventList");
-const emptyEventState = document.querySelector("#emptyEventState");
+
+const API_BASE_URL = "http://127.0.0.1:8001";
+const DEBT_REFRESH_INTERVAL_MILLISECONDS = 1000;
 
 const BASE_VEHICLE_SPEED_PIXELS_PER_SECOND = 130;
 const BASE_SPAWN_INTERVAL_MILLISECONDS = 1800;
@@ -23,8 +28,6 @@ const BASE_SPAWN_INTERVAL_MILLISECONDS = 1800;
 const VEHICLE_WIDTH = 72;
 const VEHICLE_HEIGHT = 112;
 const SENSOR_Y_POSITION = 148;
-
-const MAX_VISIBLE_EVENTS = 12;
 
 const licensePlatePool = [
   "ABC-123",
@@ -46,6 +49,14 @@ const vehicleColors = [
   "#d9dce2"
 ];
 
+const currencyFormatter = new Intl.NumberFormat(
+  "en-US",
+  {
+    style: "currency",
+    currency: "USD"
+  }
+);
+
 let isRunning = false;
 let simulationSpeed = Number(speedSlider.value);
 
@@ -65,22 +76,33 @@ function createEventId() {
     return crypto.randomUUID();
   }
 
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${Date.now()}-${Math.random()
+    .toString(16)
+    .slice(2)}`;
 }
 
 function chooseRandomItem(items) {
-  const randomIndex = Math.floor(Math.random() * items.length);
+  const randomIndex = Math.floor(
+    Math.random() * items.length
+  );
+
   return items[randomIndex];
 }
 
 function createVehicle() {
   const eventId = createEventId();
-  const licensePlateId = chooseRandomItem(licensePlatePool);
+  const licensePlateId = chooseRandomItem(
+    licensePlatePool
+  );
   const color = chooseRandomItem(vehicleColors);
 
   const vehicleElement = document.createElement("div");
+
   vehicleElement.className = "vehicle";
-  vehicleElement.style.setProperty("--vehicle-color", color);
+  vehicleElement.style.setProperty(
+    "--vehicle-color",
+    color
+  );
 
   vehicleElement.innerHTML = `
     <div class="vehicle-window"></div>
@@ -89,8 +111,10 @@ function createVehicle() {
   `;
 
   const horizontalJitter = Math.random() * 12 - 6;
+
   const xPosition =
-    (road.clientWidth - VEHICLE_WIDTH) / 2 + horizontalJitter;
+    (road.clientWidth - VEHICLE_WIDTH) / 2 +
+    horizontalJitter;
 
   const yPosition = road.clientHeight + 20;
 
@@ -118,7 +142,8 @@ function updateVehiclePosition(vehicle) {
 }
 
 function updateVehicles(elapsedMilliseconds) {
-  const elapsedSeconds = elapsedMilliseconds / 1000;
+  const elapsedSeconds =
+    elapsedMilliseconds / 1000;
 
   const distance =
     BASE_VEHICLE_SPEED_PIXELS_PER_SECOND *
@@ -128,9 +153,15 @@ function updateVehicles(elapsedMilliseconds) {
   for (const vehicle of activeVehicles.values()) {
     vehicle.y -= distance;
 
-    if (!vehicle.crossedSensor && vehicle.y <= SENSOR_Y_POSITION) {
+    if (
+      !vehicle.crossedSensor &&
+      vehicle.y <= SENSOR_Y_POSITION
+    ) {
       vehicle.crossedSensor = true;
-      vehicle.element.classList.add("vehicle--crossed");
+
+      vehicle.element.classList.add(
+        "vehicle--crossed"
+      );
 
       handleTollCrossing(vehicle);
     }
@@ -149,14 +180,11 @@ function removeVehicle(vehicle) {
 }
 
 /**
- * This function represents the physical toll sensor.
+ * Represents the toll sensor detecting a vehicle.
  *
- * Today:
- *   It records the crossing locally.
- *
- * Later:
- *   It will send this event to our FastAPI backend, which will
- *   publish the event into Kafka.
+ * The frontend sends the passage to FastAPI.
+ * FastAPI publishes it to Kafka.
+ * The consumer later stores it in MySQL.
  */
 async function handleTollCrossing(vehicle) {
   const passageEvent = {
@@ -165,15 +193,17 @@ async function handleTollCrossing(vehicle) {
     timestamp: new Date().toISOString()
   };
 
-  // This is a frontend simulation metric.
   crossingCount += 1;
   crossingCountElement.textContent = crossingCount;
 
-  console.log("Toll passage detected:", passageEvent);
+  console.log(
+    "Toll passage detected:",
+    passageEvent
+  );
 
   try {
     const response = await fetch(
-      "http://127.0.0.1:8001/toll-passages",
+      `${API_BASE_URL}/toll-passages`,
       {
         method: "POST",
         headers: {
@@ -189,38 +219,109 @@ async function handleTollCrossing(vehicle) {
       );
     }
 
-    console.log("Toll passage accepted by API");
+    console.log(
+      "Toll passage accepted by API:",
+      passageEvent.eventId
+    );
   } catch (error) {
-    console.error("Failed to send toll passage:", error);
+    console.error(
+      "Failed to send toll passage:",
+      error
+    );
   }
 }
 
-function addEventToLog(passageEvent) {
-  emptyEventState?.remove();
+function formatDebt(totalDebtCents) {
+  return currencyFormatter.format(
+    totalDebtCents / 100
+  );
+}
 
-  const eventItem = document.createElement("li");
-  eventItem.className = "event-item";
+async function fetchDebts() {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/debts`
+    );
 
-  const eventTime = new Date(
-    passageEvent.timestamp
-  ).toLocaleTimeString();
+    if (!response.ok) {
+      throw new Error(
+        `Debt API returned status ${response.status}`
+      );
+    }
 
-  eventItem.innerHTML = `
-    <span class="event-number">${crossingCount}</span>
+    const debts = await response.json();
 
-    <div class="event-details">
-      <strong>${passageEvent.licensePlateId}</strong>
-      <span>${passageEvent.eventId}</span>
-    </div>
-
-    <span class="event-time">${eventTime}</span>
-  `;
-
-  eventList.prepend(eventItem);
-
-  while (eventList.children.length > MAX_VISIBLE_EVENTS) {
-    eventList.lastElementChild.remove();
+    renderDebts(debts);
+  } catch (error) {
+    console.error(
+      "Failed to fetch debts:",
+      error
+    );
   }
+}
+
+function renderDebts(debts) {
+  eventList.replaceChildren();
+
+  if (debts.length === 0) {
+    const emptyState = document.createElement("li");
+
+    emptyState.className = "empty-event-state";
+    emptyState.textContent =
+      "No toll debts have been recorded yet.";
+
+    eventList.appendChild(emptyState);
+    return;
+  }
+
+  debts.forEach((debt, index) => {
+    const debtItem = document.createElement("li");
+    debtItem.className = "event-item";
+
+    const position = document.createElement("span");
+    position.className = "event-number";
+    position.textContent = String(index + 1);
+
+    const details = document.createElement("div");
+    details.className = "event-details";
+
+    const licensePlate =
+      document.createElement("strong");
+
+    licensePlate.textContent =
+      debt.licensePlateId;
+
+    const description =
+      document.createElement("span");
+
+    description.textContent =
+      "Outstanding toll debt";
+
+    details.appendChild(licensePlate);
+    details.appendChild(description);
+
+    const amount = document.createElement("span");
+    amount.className = "event-time";
+
+    amount.textContent = formatDebt(
+      debt.totalDebtCents
+    );
+
+    debtItem.appendChild(position);
+    debtItem.appendChild(details);
+    debtItem.appendChild(amount);
+
+    eventList.appendChild(debtItem);
+  });
+}
+
+async function continuouslyRefreshDebts() {
+  await fetchDebts();
+
+  setTimeout(
+    continuouslyRefreshDebts,
+    DEBT_REFRESH_INTERVAL_MILLISECONDS
+  );
 }
 
 function updateSimulation(timestamp) {
@@ -237,13 +338,20 @@ function updateSimulation(timestamp) {
 
   if (isRunning) {
     const spawnInterval =
-      BASE_SPAWN_INTERVAL_MILLISECONDS / simulationSpeed;
+      BASE_SPAWN_INTERVAL_MILLISECONDS /
+      simulationSpeed;
 
-    spawnAccumulatorMilliseconds += elapsedMilliseconds;
+    spawnAccumulatorMilliseconds +=
+      elapsedMilliseconds;
 
-    while (spawnAccumulatorMilliseconds >= spawnInterval) {
+    while (
+      spawnAccumulatorMilliseconds >=
+      spawnInterval
+    ) {
       createVehicle();
-      spawnAccumulatorMilliseconds -= spawnInterval;
+
+      spawnAccumulatorMilliseconds -=
+        spawnInterval;
     }
 
     updateVehicles(elapsedMilliseconds);
@@ -295,16 +403,6 @@ function resetSimulation() {
   createdCountElement.textContent = "0";
   crossingCountElement.textContent = "0";
 
-  eventList.replaceChildren();
-
-  const emptyState = document.createElement("li");
-  emptyState.id = "emptyEventState";
-  emptyState.className = "empty-event-state";
-  emptyState.textContent =
-    "Start the simulation to generate toll passage events.";
-
-  eventList.appendChild(emptyState);
-
   startButton.disabled = false;
   pauseButton.disabled = true;
 
@@ -312,32 +410,62 @@ function resetSimulation() {
 }
 
 function setStatus(status) {
-  statusIndicator.className = "status-indicator";
+  statusIndicator.className =
+    "status-indicator";
 
   if (status === "running") {
-    statusIndicator.classList.add("status-indicator--running");
+    statusIndicator.classList.add(
+      "status-indicator--running"
+    );
+
     statusText.textContent = "Running";
     return;
   }
 
   if (status === "paused") {
-    statusIndicator.classList.add("status-indicator--paused");
+    statusIndicator.classList.add(
+      "status-indicator--paused"
+    );
+
     statusText.textContent = "Paused";
     return;
   }
 
-  statusIndicator.classList.add("status-indicator--stopped");
+  statusIndicator.classList.add(
+    "status-indicator--stopped"
+  );
+
   statusText.textContent = "Stopped";
 }
 
 function updateSpeed() {
-  simulationSpeed = Number(speedSlider.value);
-  speedValue.textContent = `${simulationSpeed}×`;
+  simulationSpeed = Number(
+    speedSlider.value
+  );
+
+  speedValue.textContent =
+    `${simulationSpeed}×`;
 }
 
-startButton.addEventListener("click", startSimulation);
-pauseButton.addEventListener("click", pauseSimulation);
-resetButton.addEventListener("click", resetSimulation);
-speedSlider.addEventListener("input", updateSpeed);
+startButton.addEventListener(
+  "click",
+  startSimulation
+);
+
+pauseButton.addEventListener(
+  "click",
+  pauseSimulation
+);
+
+resetButton.addEventListener(
+  "click",
+  resetSimulation
+);
+
+speedSlider.addEventListener(
+  "input",
+  updateSpeed
+);
 
 requestAnimationFrame(updateSimulation);
+continuouslyRefreshDebts();
