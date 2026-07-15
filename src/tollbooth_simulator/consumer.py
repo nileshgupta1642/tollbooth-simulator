@@ -22,6 +22,39 @@ consumer = Consumer(
 
 passage_store = PassageStore()
 
+def process_message(
+    message,
+    passage_store: PassageStore,
+    kafka_consumer: Consumer,
+) -> tuple[dict, bool]:
+    event = json.loads(
+        message.value().decode("utf-8")
+    )
+
+    occurred_at = datetime.fromisoformat(
+        event["timestamp"].replace("Z", "+00:00")
+    )
+
+    occurred_at = occurred_at.astimezone(
+        timezone.utc
+    ).replace(tzinfo=None)
+
+    created = passage_store.create(
+        event_id=UUID(event["eventId"]),
+        license_plate_id=event["licensePlateId"],
+        cost_cents=TOLL_RATE_CENTS,
+        occurred_at=occurred_at,
+    )
+
+    # This is reached only if the database operation succeeds
+    # or the passage is confirmed to be a duplicate.
+    kafka_consumer.commit(
+        message=message,
+        asynchronous=False,
+    )
+
+    return event, created
+
 
 def run_consumer() -> None:
     consumer.subscribe([KAFKA_TOPIC])
@@ -39,33 +72,19 @@ def run_consumer() -> None:
             if message.error():
                 raise KafkaException(message.error())
 
-            event = json.loads(
-                message.value().decode("utf-8")
-            )
-
-            occurred_at = datetime.fromisoformat(
-                event["timestamp"].replace("Z", "+00:00")
-            )
-
-            # MySQL DATETIME does not store timezone information,
-            # so normalize the timestamp to naive UTC.
-            occurred_at = occurred_at.astimezone(
-                timezone.utc
-            ).replace(tzinfo=None)
-
-            created = passage_store.create(
-                event_id=UUID(event["eventId"]),
-                license_plate_id=event["licensePlateId"],
-                cost_cents=TOLL_RATE_CENTS,
-                occurred_at=occurred_at,
-            )
-
-            # Commit only after the database insert succeeds
-            # or the event is confirmed to be a duplicate.
-            consumer.commit(
+            event, created = process_message(
                 message=message,
-                asynchronous=False,
+                passage_store=passage_store,
+                kafka_consumer=consumer,
             )
+
+            if created:
+                print("Stored toll passage:", event)
+            else:
+                print(
+                    "Skipped duplicate toll passage:",
+                    event["eventId"]
+                    )
 
     except KeyboardInterrupt:
         print("\nStopping consumer...")
