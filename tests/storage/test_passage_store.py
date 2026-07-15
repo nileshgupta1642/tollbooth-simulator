@@ -149,3 +149,62 @@ def test_get_debt_returns_zero_when_plate_has_no_records() -> None:
 
     cursor.close.assert_called_once_with()
     connection.close.assert_called_once_with()
+
+def test_get_all_debts_returns_aggregated_debts() -> None:
+    connection_factory, connection, cursor = (
+        create_fake_database_objects()
+    )
+
+    cursor.fetchall.return_value = [
+        ("ABC-123", 450),
+        ("XYZ-908", 150),
+    ]
+
+    store = PassageStore(
+        connection_factory=connection_factory
+    )
+
+    result = store.get_all_debts()
+
+    assert result == [
+        {
+            "licensePlateId": "ABC-123",
+            "totalDebtCents": 450,
+        },
+        {
+            "licensePlateId": "XYZ-908",
+            "totalDebtCents": 150,
+        },
+    ]
+
+    cursor.execute.assert_called_once()
+
+    sql = cursor.execute.call_args.args[0]
+
+    assert "SUM(cost_cents)" in sql
+    assert "GROUP BY license_plate_id" in sql
+    assert "ORDER BY total_debt_cents DESC" in sql
+
+    cursor.fetchall.assert_called_once_with()
+    cursor.close.assert_called_once_with()
+    connection.close.assert_called_once_with()
+
+
+def test_get_all_debts_returns_empty_list_when_no_passages_exist() -> None:
+    connection_factory, connection, cursor = (
+        create_fake_database_objects()
+    )
+
+    cursor.fetchall.return_value = []
+
+    store = PassageStore(
+        connection_factory=connection_factory
+    )
+
+    result = store.get_all_debts()
+
+    assert result == []
+
+    cursor.fetchall.assert_called_once_with()
+    cursor.close.assert_called_once_with()
+    connection.close.assert_called_once_with()
