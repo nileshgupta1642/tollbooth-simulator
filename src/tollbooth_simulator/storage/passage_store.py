@@ -98,3 +98,34 @@ class PassageStore:
         finally:
             cursor.close()
             connection.close()
+
+
+    def get_all_debts(self) -> list[dict[str, str | int]]:
+        connection = self._connection_factory()
+        cursor = connection.cursor()
+
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    license_plate_id,
+                    SUM(cost_cents) AS total_debt_cents
+                FROM toll_passages
+                GROUP BY license_plate_id
+                ORDER BY total_debt_cents DESC, license_plate_id ASC
+                """
+            )
+
+            rows = cursor.fetchall()
+
+            return [
+                {
+                    "licensePlateId": license_plate_id,
+                    "totalDebtCents": int(total_debt_cents),
+                }
+                for license_plate_id, total_debt_cents in rows
+            ]
+
+        finally:
+            cursor.close()
+            connection.close()
