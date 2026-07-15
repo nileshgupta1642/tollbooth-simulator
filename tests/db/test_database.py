@@ -1,9 +1,20 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from tollbooth_simulator.db.database import (
     create_connection,
     get_connection_pool,
 )
+
+
+@pytest.fixture(autouse=True)
+def configure_database_environment(monkeypatch) -> None:
+    monkeypatch.setenv("MYSQL_HOST", "127.0.0.1")
+    monkeypatch.setenv("MYSQL_PORT", "3306")
+    monkeypatch.setenv("MYSQL_USER", "tollbooth")
+    monkeypatch.setenv("MYSQL_PASSWORD", "test-password")
+    monkeypatch.setenv("MYSQL_DATABASE", "tollbooth")
 
 
 def setup_function() -> None:
@@ -36,7 +47,7 @@ def test_get_connection_pool_creates_pool_once(
         host="127.0.0.1",
         port=3306,
         user="tollbooth",
-        password="tollbooth",
+        password="test-password",
         database="tollbooth",
     )
 

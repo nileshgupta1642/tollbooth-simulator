@@ -1,4 +1,5 @@
 from functools import lru_cache
+import os
 
 from mysql.connector.pooling import (
     MySQLConnectionPool,
@@ -15,11 +16,11 @@ def get_connection_pool() -> MySQLConnectionPool:
     return MySQLConnectionPool(
         pool_name="tollbooth_pool",
         pool_size=5,
-        host="127.0.0.1",
-        port=3306,
-        user="tollbooth",
-        password="tollbooth",
-        database="tollbooth",
+        host=os.environ["MYSQL_HOST"],
+        port=int(os.environ["MYSQL_PORT"]),
+        user=os.environ["MYSQL_USER"],
+        password=os.environ["MYSQL_PASSWORD"],
+        database=os.environ["MYSQL_DATABASE"],
     )
 
 
