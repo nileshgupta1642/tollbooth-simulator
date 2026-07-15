@@ -8,6 +8,7 @@ from confluent_kafka.aio import AIOProducer
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
+from tollbooth_simulator.storage.passage_store import PassageStore
 
 
 KAFKA_TOPIC = "toll-passages"
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+passage_store = PassageStore()
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,7 +50,7 @@ app.add_middleware(
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ],
-    allow_methods=["POST"],
+    allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
 
@@ -100,3 +102,7 @@ async def receive_toll_passage(
     )
 
     return {"status": "ok"}
+
+@app.get("/debts")
+def get_debts() -> list[dict[str, str | int]]:
+    return passage_store.get_all_debts()
