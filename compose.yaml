@@ -1,0 +1,22 @@
+services:
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: tollbooth-kafka
+    ports:
+      - "9092:9092"
+
+  mysql:
+    image: mysql:8.4
+    container_name: tollbooth-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tollbooth
+      MYSQL_USER: tollbooth
+      MYSQL_PASSWORD: tollbooth
+    ports:
+      - "3306:3306"
+    volumes:
+      - tollbooth-mysql-data:/var/lib/mysql
+
+volumes:
+  tollbooth-mysql-data:
