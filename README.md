@@ -1,5 +1,7 @@
 # Tollbooth Simulator
 
+<img width="1200" height="813" alt="Screenshot 2026-07-14 at 9 56 36 PM" src="https://github.com/user-attachments/assets/732e4deb-535a-4c16-a58b-0a7a6415339d" />
+
 A local event-driven tollbooth simulation built with FastAPI, Kafka, MySQL, and vanilla JavaScript.
 
 Vehicles drive through an animated tollbooth in the browser. When a vehicle crosses the toll sensor, the frontend sends a passage event to the API. The API publishes that event to Kafka, a separate consumer processes it and stores the charge in MySQL, and the frontend periodically refreshes a live view of the outstanding debt for each license plate.
