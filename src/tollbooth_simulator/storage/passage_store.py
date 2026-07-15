@@ -6,6 +6,9 @@ from mysql.connector.pooling import PooledMySQLConnection
 
 from tollbooth_simulator.db.database import create_connection
 
+from mysql.connector import IntegrityError
+
+
 
 class PassageStore:
     def __init__(
@@ -22,11 +25,11 @@ class PassageStore:
         license_plate_id: str,
         cost_cents: int,
         occurred_at: datetime,
-    ) -> None:
+    ) -> bool:
         connection = self._connection_factory()
-        cursor = connection.cursor()
-
+    
         try:
+            cursor = connection.cursor()
             cursor.execute(
                 """
                 INSERT INTO toll_passages (
@@ -46,6 +49,16 @@ class PassageStore:
             )
 
             connection.commit()
+            return True
+
+        except IntegrityError as error:
+            connection.rollback()
+
+            # MySQL error 1062 means duplicate primary/unique key.
+            if error.errno == 1062:
+                return False
+
+            raise
 
         except Exception:
             connection.rollback()
